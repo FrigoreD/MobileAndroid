@@ -1,4 +1,4 @@
-package ru.stankin.labs.myfirstapplication
+package ru.stankin.labs.laba2
 
 import android.os.Bundle
 import android.widget.TextView

@@ -4,11 +4,11 @@ plugins {
 }
 
 android {
-    namespace = "ru.stankin.labs.myfirstapplication"
+    namespace = "ru.stankin.labs.laba2"
     compileSdk = 34
 
     defaultConfig {
-        applicationId = "ru.stankin.labs.myfirstapplication"
+        applicationId = "ru.stankin.labs.laba2"
         minSdk = 26
         targetSdk = 34
         versionCode = 1
