@@ -1,61 +1,93 @@
 package ru.stankin.labs.laba2
 
-import android.content.res.Configuration
+import android.Manifest
+import android.annotation.SuppressLint
+import android.content.ContentResolver
+import android.content.pm.PackageManager
 import android.os.Bundle
+import android.provider.ContactsContract
+import android.widget.ArrayAdapter
+import android.widget.ListView
+import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
-import ru.stankin.labs.laba2.ProductItem.DetailFragment
-import ru.stankin.labs.laba2.ProductsList.ProductsFragment
-
+import androidx.core.app.ActivityCompat
+import androidx.core.content.ContextCompat
 
 class MainActivity : AppCompatActivity() {
+
+    private lateinit var contactsListView: ListView
+    private lateinit var contactsList: ArrayList<String>
+
+    companion object {
+        private const val PERMISSION_REQUEST_READ_CONTACTS = 100
+    }
+
+    @SuppressLint("MissingInflatedId")
     override fun onCreate(savedInstanceState: Bundle?) {
-
         super.onCreate(savedInstanceState)
-
         setContentView(R.layout.activity_main)
 
-        supportFragmentManager.beginTransaction()
-            .replace(R.id.fragment_host, ProductsFragment.newInstance(), null)
-            .commit()
+        contactsListView = findViewById(R.id.contactsListView)
+        contactsList = ArrayList()
 
-        supportFragmentManager.setFragmentResultListener(
-            ProductsFragment.REQUEST_FRAGMENT, this, ::onProductsFragmentResult
-        )
+        if (ContextCompat.checkSelfPermission(
+                this,
+                Manifest.permission.READ_CONTACTS
+            ) != PackageManager.PERMISSION_GRANTED
+        ) {
+            ActivityCompat.requestPermissions(
+                this,
+                arrayOf(Manifest.permission.READ_CONTACTS),
+                PERMISSION_REQUEST_READ_CONTACTS
+            )
+        } else {
+            loadContacts()
+        }
     }
-    private fun isLandscapeMode() : Boolean {
-        return resources.configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
-    }
-    private fun onProductsFragmentResult(requestKey: String, data: Bundle) {
-        val title =
-            data.getString(ProductsFragment.TITLE) ?:
-            throw IllegalArgumentException("TODO")
-        val description =
-            data.getString(ProductsFragment.DESCRIPTION) ?:
-            throw IllegalArgumentException("TODO")
-        val value =
-            data.getInt(ProductsFragment.VALUE)
-        val inStock =
-            data.getBoolean(ProductsFragment.IN_STOCK)
-        val id =
-            data.getInt(ProductsFragment.ID)
 
-        val isLandscape = isLandscapeMode()
-
-        supportFragmentManager.beginTransaction()
-            .replace(
-                if (isLandscape) R.id.fragment_details  else R.id.fragment_host,
-                DetailFragment.newInstance(
-                title = title,
-                description = description,
-                value = value,
-                inStock = inStock,
-                id = id,
-            ), null)
-            .apply {
-                if (!isLandscape) {
-                    addToBackStack("DetailFragment")
+    override fun onRequestPermissionsResult(
+        requestCode: Int,
+        permissions: Array<out String>,
+        grantResults: IntArray
+    ) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+        when (requestCode) {
+            PERMISSION_REQUEST_READ_CONTACTS -> {
+                if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                    loadContacts()
+                } else {
+                    Toast.makeText(
+                        this,
+                        "Permission Denied",
+                        Toast.LENGTH_SHORT
+                    ).show()
                 }
+                return
             }
-            .commit()
+        }
+    }
+
+    @SuppressLint("Range")
+    private fun loadContacts() {
+        val contentResolver: ContentResolver = contentResolver
+        val cursor = contentResolver.query(
+            ContactsContract.Contacts.CONTENT_URI,
+            null,
+            null,
+            null,
+            null
+        )
+
+        cursor?.let {
+            while (it.moveToNext()) {
+                val contactName =
+                    it.getString(it.getColumnIndex(ContactsContract.Contacts.DISPLAY_NAME))
+                contactsList.add(contactName)
+            }
+            it.close()
+        }
+
+        val adapter = ArrayAdapter(this, android.R.layout.simple_list_item_1, contactsList)
+        contactsListView.adapter = adapter
     }
 }
